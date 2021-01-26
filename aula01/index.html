@@ -1,0 +1,50 @@
+window.addEventListener('message', receiver, false);
+
+function receiver(e)
+{
+	if (e.origin == origin) {
+		var data = JSON.parse(e.data);
+		if (data.ajax !== undefined) {
+			// manda via AJAX
+			ajax(data.ajax, data.payload);
+			return;
+		}
+		if (data.emit === "_cb") {
+			// chamada especial para adicionar tratador
+			link_msg(data.payload.id);
+		} else if (data.emit === "_socketio") {
+			// chamada especial para ativar Socket.io
+			ioconnect();
+		} else {
+			// manda via Socket.io
+			if (socket === null) {
+				return;
+			}
+			socket.emit(data.emit, data.payload);
+		}
+	} else {
+		// console.log("index: origem ruim");
+	}
+}
+
+function ajax(method, params)
+{
+   	var request;
+	var sparams = JSON.stringify({"method": method,
+					"params": params});
+
+	request = new window.XMLHttpRequest();
+
+	request.onreadystatechange = function () {
+		if (request.readyState == 4 &&
+				request.status == 200) {
+			var res = JSON.parse(request.responseText);
+			var method = res.method;
+			var params = res.params;
+			send_back(method, params);
+		}
+	}
+	request.open('POST', origin + ':34549/ajax', true);
+	request.setRequestHeader('Content-type', 'application/json');
+	request.send(sparams);
+}
